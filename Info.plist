@@ -2,9 +2,30 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-	</array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+    </array>
+
+    <!-- ✅ Location Permissions (already exists) -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>WhizRun needs access to your location to track outdoor runs.</string>
+
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>WhizRun requires background location access to track runs.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>WhizRun needs your location even when the app is in the background.</string>
+
+    <!-- ✅ Motion & Fitness Permissions for Step Counting -->
+    <key>NSMotionUsageDescription</key>
+    <string>WhizRun needs access to motion and fitness data to track indoor runs.</string>
+
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>WhizRun uses motion data to track step count and distance for indoor runs.</string>
+
+    <key>NSHealthShareUsageDescription</key>
+    <string>WhizRun reads step count data to enhance run tracking.</string>
+
 </dict>
 </plist>

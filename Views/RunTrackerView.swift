@@ -3,59 +3,85 @@ import Combine
 
 struct RunTrackerView: View {
     @StateObject private var runData = RunDataManager.shared
-    @State private var showPermissionAlert = false
-    @State private var showSummaryModal = false  // ✅ Added state for modal control
-    @State private var runSummary: RunSession?  // ✅ Stores the generated run summary
-    @State private var cancellables = Set<AnyCancellable>()
-    @Environment(\.dismiss) var dismiss  // ✅ Allows navigation back
+    @StateObject private var stepCounter = StepCounterManager.shared // ✅ Observe StepCounterManager
 
+    @State private var showPermissionAlert = false
+    @State private var showSummaryModal = false
+    @State private var runSummary: RunSession?
+    @Environment(\.dismiss) var dismiss
+
+    var isIndoorRun: Bool  // ✅ Determines if run is indoor or outdoor
 
     var body: some View {
         NavigationStack {
-            
             VStack(spacing: 20) {
-                MetricView(label: "Distance", value: "\(runData.totalDistance.formatted()) meters")
+                MetricView(label: "Distance", value: formattedDistance())
                 MetricView(label: "Time", value: "\(runData.duration.formatted()) seconds")
-                
+
                 StopButton(action: stopRun)
             }
             .padding()
             .onAppear(perform: checkPermissions)
-            .alert("Location Permission Required", isPresented: $showPermissionAlert) {
+            .alert("Permission Required", isPresented: $showPermissionAlert) {
                 Button("Settings") {
                     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                     UIApplication.shared.open(url)
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .sheet(isPresented: $showSummaryModal, onDismiss: { dismiss() }) {  // ✅ Ensure dismissal works
+            .sheet(isPresented: $showSummaryModal, onDismiss: { dismiss() }) {
                 if let summary = runSummary {
                     RunSummaryView(summary: summary) {
-                        showSummaryModal = false  // ✅ Closes the modal when user dismisses
-                        dismiss()  // ✅ Ensure it navigates back
+                        showSummaryModal = false
+                        dismiss()
                     }
                 }
             }
         }
     }
-    
-    private func checkPermissions() {
-        let status = LocationManager.shared.currentPermissionStatus()
-        if status == .notDetermined {
-            LocationManager.shared.requestPermission()
-        } else if status == .denied || status == .restricted {
-            showPermissionAlert = true
+
+    // ✅ Fix: Display correct distance based on mode
+    private func formattedDistance() -> String {
+        if isIndoorRun {
+            return "\(stepCounter.distance.formatted()) meters" // ✅ Show indoor step distance
         } else {
-            runData.startRun()
+            return "\(runData.totalDistance.formatted()) meters" // ✅ Show GPS distance
         }
     }
-    
+
+    private func checkPermissions() {
+        if isIndoorRun {
+            // ✅ Indoor Run - Check Motion Permissions
+            let motionStatus = StepCounterManager.shared.permissionStatus
+            if motionStatus == .notDetermined {
+                StepCounterManager.shared.requestPermission()
+            } else if motionStatus == .denied {
+                showPermissionAlert = true
+            } else {
+                runData.startRun(isIndoorRun: true) // ✅ Start Step Counter
+            }
+        } else {
+            // ✅ Outdoor Run - Check Location Permissions
+            let locationStatus = LocationManager.shared.currentPermissionStatus()
+            if locationStatus == .notDetermined {
+                LocationManager.shared.requestPermission()
+            } else if locationStatus == .denied || locationStatus == .restricted {
+                showPermissionAlert = true
+            } else {
+                runData.startRun(isIndoorRun: false) // ✅ Start GPS Tracking
+            }
+        }
+    }
+
     private func stopRun() {
         runData.stopRun()
         runSummary = runData.generateRunSummary()
-        showSummaryModal = true  // ✅ Trigger modal when stopping run
+        showSummaryModal = true
     }
 }
+
+
+
 
 // MARK: - Subviews
 private struct MetricView: View {
